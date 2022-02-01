@@ -34,7 +34,7 @@ requirements = [
 setup(
     name='pymps',
     version=__version__,
-    url='',
+    url='https://github.com/jacobmanalo/dmrg_tool.git',
     author='Jacob Manalo',
     author_email='manalo@protonmail.com',
     python_requires=('>=3.7.0'),
