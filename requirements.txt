@@ -1,0 +1,5 @@
+numpy
+tensornetwork
+more-itertools
+scipy
+h5py

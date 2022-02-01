@@ -1,0 +1,14 @@
+Metadata-Version: 2.1
+Name: pymps
+Version: 0.0.0
+Summary: A python tool for implementing the DMRG algorithmusing the TensorNetwork library.
+Home-page: UNKNOWN
+Author: Jacob Manalo
+Author-email: manalo@protonmail.com
+License: Apache 2.0
+Description: Hello
+        
+        
+Platform: UNKNOWN
+Requires-Python: >=3.7.0
+Description-Content-Type: text/markdown
