@@ -1,3 +1,4 @@
+h5py
 more-itertools
 numpy
 scipy
