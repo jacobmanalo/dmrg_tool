@@ -1,0 +1,4 @@
+numpy
+tensornetwork
+more-itertools
+scipy
