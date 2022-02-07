@@ -110,6 +110,7 @@ class Hamiltonian:
                         H[j,n,n1,i] = np.dot(states[n],np.matmul(self.Ovec[j,i],states[n1]))
                         
          return H
+ 
     def GetMPOTensors(self):
          H = self.GetMPO()
          L = self.L
@@ -126,9 +127,24 @@ class Hamiltonian:
          OL = H[self.L-1]
          hMPO += [tn.Node(OL,axis_names=["n_{}p".format(L-1),"n_{}".format(L-1),"i_{}".format(L-2)] )]
          
+         
+             
+         #simplify tensors using SVD        
+         u, vh, trun_err = tn.split_node(hMPO[0], left_edges=[hMPO[0]["n_0p"],hMPO[0]["n_0"]],right_edges=[hMPO[0]["i_0"]],max_truncation_err=0.01,edge_name="g")
+         hMPO[0] = tn.Node(u.tensor,axis_names=["n_0p","n_0","i_0"] )
+         
+         for j in range(1,L-1):
+            hMPO[j]= tn.Node(tn.ncon([vh.tensor,hMPO[j].tensor],[(-3,1),(-1,-2,1,-4)]),axis_names=["n_{}p".format(j),"n_{}".format(j),"i_{}".format(j-1),"i_{}".format(j)])
+            u, vh, trun_err = tn.split_node(hMPO[j], left_edges=[hMPO[j]["n_{}p".format(j)],hMPO[j]["n_{}".format(j)],hMPO[j]["i_{}".format(j-1)]],right_edges=[hMPO[j]["i_{}".format(j)]],max_truncation_err=0.01,edge_name="g")
+            print(j)
+            print(tn.shape(vh))
+            print(tn.shape(hMPO[j+1]))
+            hMPO[j] = tn.Node(u.tensor,axis_names=["n_{}p".format(j),"n_{}".format(j),"i_{}".format(j-1),"i_{}".format(j)])
+         hMPO[L-1]= tn.Node(tn.ncon([vh.tensor,hMPO[L-1].tensor],[(-3,1),(-1,-2,1)]),axis_names=["n_{}p".format(L-1),"n_{}".format(L-1),"i_{}".format(L-2)])
+         
          connected_edges2=[]
          for j in range(1,L):
-             conn2 = hMPO[j-1]["i_{}".format(j-1)]^hMPO[j]["i_{}".format(j-1)]
-             connected_edges2.append(conn2)
-
+            conn2 = hMPO[j-1]["i_{}".format(j-1)]^hMPO[j]["i_{}".format(j-1)]
+            connected_edges2.append(conn2)
+        
          return hMPO,connected_edges2
