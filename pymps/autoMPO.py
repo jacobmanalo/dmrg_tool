@@ -100,6 +100,8 @@ class Hamiltonian:
         self.L = L          
 
     def add(self, op2, coeff = 1):
+         """ Add two operator and append in diagonal, secc. IV in PHYSICAL REVIEW B 95, 035129 (2017)
+        """
          if len(self.Ovec) > 0:
            if(len(self.Ovec.shape)< 4):
              dim = 2;
