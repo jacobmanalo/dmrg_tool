@@ -32,7 +32,9 @@ class LocalOperator:
             sign = 0
             if abs(op2) > 1e-10:
              sign = op2/abs(op2)
-            return LocalOperator(self.O*coeff*sign,self.L)
+             O = self.O
+             O[0] *= sign
+            return LocalOperator(O*coeff,self.L)
         
         # operator by operator multiplication
         res = self.O
@@ -87,7 +89,7 @@ def FermiOp(i, L, dagged):
           O[j] = sg
         elif j > i:
           O[j] = one
-        elif j==i:
+        elif j == i:
           O[j] = f
     return LocalOperator(O,L)
 
@@ -127,11 +129,12 @@ class Hamiltonian:
          nterms = self.Ovec.shape[1]
          H = np.array([[[[0.]*nterms]*2]*2]*self.L)
          states = np.array([[0,1],[1,0]])
-         for j in range(self.L):
+         for j in range(self.L): #site index
              for n in range(2):
                  for n1 in range(2):
                      for i in range(nterms):
                         H[j,n,n1,i] = np.dot(states[n],np.matmul(self.Ovec[j,i],states[n1]))
+                        print("{},".format(n),"{},".format(n1),"{},".format(j),"{},".format(i),H[j,n,n1,i])
                         
          return H
  
@@ -141,8 +144,9 @@ class Hamiltonian:
          nterms = self.Ovec.shape[1]
          
          hMPO = [tn.Node(H[0], axis_names = ["n_0p","n_0","i_0"] )]         
-         Oj = np.array([[[[0.]*nterms]*nterms]*2]*2)
+         
          for j in range(1, L-1):
+             Oj = np.array([[[[0.]*nterms]*nterms]*2]*2)
              for n1 in range(2):
                  for n2 in range(2):
                   Oj[n1,n2] = np.diag(H[j,n1,n2])
@@ -157,7 +161,7 @@ class Hamiltonian:
          hMPO[0] = tn.Node(u.tensor, axis_names = ["n_0p","n_0","i_0"] )         
          for j in range(1,L-1):
             hMPO[j]= tn.Node(tn.ncon([vh.tensor,hMPO[j].tensor],[(-3,1),(-1,-2,1,-4)]),axis_names=["n_{}p".format(j),"n_{}".format(j),"i_{}".format(j-1),"i_{}".format(j)])
-            u, vh, trun_err = tn.split_node(hMPO[j], left_edges = [hMPO[j]["n_{}p".format(j)],hMPO[j]["n_{}".format(j)],hMPO[j]["i_{}".format(j-1)]], right_edges = [hMPO[j]["i_{}".format(j)]], max_truncation_err = truncation_error, edge_name  ="g")
+            u, vh, trun_err = tn.split_node(hMPO[j], left_edges = [hMPO[j]["n_{}p".format(j)],hMPO[j]["n_{}".format(j)],hMPO[j]["i_{}".format(j-1)]], right_edges = [hMPO[j]["i_{}".format(j)]], max_truncation_err = truncation_error, edge_name  = "g")
             hMPO[j] = tn.Node(u.tensor,axis_names=["n_{}p".format(j),"n_{}".format(j),"i_{}".format(j-1),"i_{}".format(j)])
          hMPO[L-1]= tn.Node(tn.ncon([vh.tensor,hMPO[L-1].tensor],[(-3,1),(-1,-2,1)]),axis_names=["n_{}p".format(L-1),"n_{}".format(L-1),"i_{}".format(L-2)])
          
