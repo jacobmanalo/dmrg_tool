@@ -3,7 +3,7 @@ import tensornetwork as tn
 import itertools as itt
 from scipy.sparse import linalg as la
 
-def init_wavefunction(n_sites,**kwargs):
+def init_wavefunction(n_sites,bond_dim,**kwargs):
     """
     A function that initializes the coefficients of a wavefunction for L sites (from 0 to L-1) and arranges
     them in a tensor of dimension n_0 x n_1 x ... x n_L for L sites. SVD
@@ -60,7 +60,9 @@ def init_wavefunction(n_sites,**kwargs):
             r_edges+=[u[i+1]["i_{}".format(i)]]
         #print('hello',i)
         u[i],s[i],v[i],_ = tn.split_node_full_svd(u[i+1],left_edges=l_edges, \
-                                                  right_edges=r_edges,left_edge_name="d_{}".format(i-1),right_edge_name="i_{}".format(i-1))
+                                                  right_edges=r_edges,left_edge_name="d_{}".format(i-1),\
+                                                      right_edge_name="i_{}".format(i-1),\
+                                                          max_singular_values=bond_dim)
         
         if i == n_sites-1:
             reord_edges=[v[i]["n_{}".format(i)],v[i]["i_{}".format(i-1)]]

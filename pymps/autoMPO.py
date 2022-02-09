@@ -134,7 +134,7 @@ class Hamiltonian:
                  for n1 in range(2):
                      for i in range(nterms):
                         H[j,n,n1,i] = np.dot(states[n],np.matmul(self.Ovec[j,i],states[n1]))
-                        print("{},".format(n),"{},".format(n1),"{},".format(j),"{},".format(i),H[j,n,n1,i])
+                        #print("{},".format(n),"{},".format(n1),"{},".format(j),"{},".format(i),H[j,n,n1,i])
                         
          return H
  

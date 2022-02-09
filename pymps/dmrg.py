@@ -152,6 +152,7 @@ class SweepOpt:
         MPS : Tensor Network
             Matrix Product State
         """
+#        print("in forward sweet",self.MPS)
         nsites = len(self.MPS)
         for i in range(nsites-1):
             if i==0:
@@ -176,7 +177,8 @@ class SweepOpt:
             hsuper_matrix = np.reshape(hsuper_node.tensor, (dim_hsuper,dim_hsuper))
             
             init_vec = self.mpscopy[i].tensor.flatten()
-            energies, evecs = la.eigsh(hsuper_matrix,k=2,which='SA',v0=init_vec)
+            energies, evecs = la.eigsh(hsuper_matrix,k=1,which='SA',v0=init_vec)
+           # energies, evecs = la.eigs(hsuper_matrix,k=2,which='SR')
             
             energy = min(energies)
             min_idx=np.argmin(energies)
@@ -246,7 +248,8 @@ class SweepOpt:
             
             hsuper_matrix = np.reshape(hsuper_node.tensor, (dim_hsuper,dim_hsuper))
             init_vec = self.mpscopy[i].tensor.flatten()
-            energies, evecs = la.eigsh(hsuper_matrix,k=2,which='SA',v0=init_vec)
+            energies, evecs = la.eigsh(hsuper_matrix,k=1,which='SA',v0=init_vec)
+           # energies, evecs = la.eigs(hsuper_matrix,k=2,which='SR')
             
             energy = min(energies)
             min_idx=np.argmin(energies)

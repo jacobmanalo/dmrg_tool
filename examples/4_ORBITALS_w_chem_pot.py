@@ -29,7 +29,7 @@ def kdelta(i,j):
 bond_dim=2
 
 n_sites = 4
-mps = mp.init_wavefunction(n_sites)
+mps = mp.init_wavefunction(n_sites, bond_dim=2)
 
 #
 
