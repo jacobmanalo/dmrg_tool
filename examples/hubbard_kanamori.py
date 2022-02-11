@@ -6,10 +6,12 @@ import itertools as itt
 from scipy import linalg as la
 import scipy as SP
 
+import time
+
 import sys
 sys.path.append('../') 
 import pymps as mp
-n_dots =2
+n_dots =3
 L = 4*n_dots
 H = mp.Hamiltonian(L)
 
@@ -74,6 +76,7 @@ def Sp(i,alpha):
 def Sm(i,alpha):
     return C_dag(ix(i,alpha,0))*C(ix(i,alpha,1))
 
+t1=time.time()
 """
 The following code is for the single dot Hamiltonian
 """
@@ -136,21 +139,26 @@ for i in range(n_dots-1):
             H.add(N(ix(i,alpha,spin))*(V2))
             H.add(N(ix(i+1,alpha,spin))*(V2))
 
+
 """
 Chemical potential term
 """
-chem_pot = 20.
+chem_pot = 47.5
 for i in range(L):
    H.add(N(i)*(-chem_pot))
+   
+t2=time.time()
+print("Finished building MPO=",t2-t1)
 
-bonddim = 100
+bonddim = 200
 MPO, MPO_edges = H.GetMPOTensors()
-mps = mp.init_wavefunction(L, bond_dim=bonddim, conserve_n=True, num_e=8)
-
+n_e=2*n_dots
+mps = mp.init_wavefunction(L, bonddim)
+#input()
 #bond_dim=4
 #mps = mp.create_MPS(L,bond_dim)
 
-energy, energies, MPS = mp.DMRG(L, MPO, 4, mps)
+energy, energies, MPS = mp.DMRG(L, MPO, 2, mps)
 
 mps_con = []
 for i in range(1,L):

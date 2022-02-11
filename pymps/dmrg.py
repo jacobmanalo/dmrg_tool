@@ -2,6 +2,9 @@ import numpy as np
 import tensornetwork as tn
 import itertools as itt
 from scipy.sparse import linalg as la
+import scipy as SP
+import pymps as mp
+#import lanczos
 
 class SweepOpt:
     """
@@ -175,10 +178,18 @@ class SweepOpt:
                 dim_hsuper*=hsuper_shape[k]
             
             hsuper_matrix = np.reshape(hsuper_node.tensor, (dim_hsuper,dim_hsuper))
-            
-            init_vec = self.mpscopy[i].tensor.flatten()
-            energies, evecs = la.eigsh(hsuper_matrix,k=1,which='SA',v0=init_vec)
-           # energies, evecs = la.eigs(hsuper_matrix,k=2,which='SR')
+           # print("H super block =",hsuper_matrix)
+            #init_vec = self.mpscopy[i].tensor.flatten()
+            #energies, evecs = la.eigsh(hsuper_matrix,k=1,which='SA',v0=init_vec)
+            #energies, evecs = SP.linalg.eigh(hsuper_matrix, subset_by_index=[0,0])
+           # energies, evecs = la.eigs(hsuper_matrix,k=1,which='SR')
+            num_iter = self.MPS[i].tensor.flatten().shape[0]
+            energies, evecs = mp.lanczos(hsuper_matrix,num_iter-1,1)
+            #energies, evecs = eigensolver(hsuper_matrix,1)
+# =============================================================================
+#             print("LENGTH",hsuper_matrix.shape[0])
+#             input()
+# =============================================================================
             
             energy = min(energies)
             min_idx=np.argmin(energies)
@@ -247,10 +258,15 @@ class SweepOpt:
                 dim_hsuper*=hsuper_shape[k]
             
             hsuper_matrix = np.reshape(hsuper_node.tensor, (dim_hsuper,dim_hsuper))
-            init_vec = self.mpscopy[i].tensor.flatten()
-            energies, evecs = la.eigsh(hsuper_matrix,k=1,which='SA',v0=init_vec)
-           # energies, evecs = la.eigs(hsuper_matrix,k=2,which='SR')
+            #init_vec = self.mpscopy[i].tensor.flatten()
+            #energies, evecs = la.eigsh(hsuper_matrix,k=1,which='SA',v0=init_vec)
+            #energies, evecs = SP.linalg.eigh(hsuper_matrix, subset_by_index=[0,0])
+            #energies, evecs = la.eigs(hsuper_matrix,k=1,which='SR')
+            num_iter = self.MPS[i].tensor.flatten().shape[0]
+            energies, evecs = mp.lanczos(hsuper_matrix,num_iter-1,1)
+            #energies, evecs = eigensolver(hsuper_matrix,1)
             
+                        
             energy = min(energies)
             min_idx=np.argmin(energies)
             
