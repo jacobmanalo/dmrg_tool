@@ -11,7 +11,7 @@ import time
 import sys
 sys.path.append('../') 
 import pymps as mp
-n_dots =3
+n_dots =2
 L = 4*n_dots
 H = mp.Hamiltonian(L)
 
@@ -143,14 +143,14 @@ for i in range(n_dots-1):
 """
 Chemical potential term
 """
-chem_pot = 47.5
+chem_pot = 30.
 for i in range(L):
    H.add(N(i)*(-chem_pot))
    
 t2=time.time()
 print("Finished building MPO=",t2-t1)
 
-bonddim = 200
+bonddim = 100
 MPO, MPO_edges = H.GetMPOTensors()
 n_e=2*n_dots
 mps = mp.init_wavefunction(L, bonddim)
@@ -158,7 +158,11 @@ mps = mp.init_wavefunction(L, bonddim)
 #bond_dim=4
 #mps = mp.create_MPS(L,bond_dim)
 
-energy, energies, MPS = mp.DMRG(L, MPO, 2, mps)
+t1 = time.time()
+energy, energies, MPS = mp.DMRG(L, MPO,2, mps)
+t2 = time.time()
+
+print("Time of diag=",t2-t1)
 
 mps_con = []
 for i in range(1,L):

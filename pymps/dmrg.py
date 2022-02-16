@@ -4,6 +4,17 @@ import itertools as itt
 from scipy.sparse import linalg as la
 import scipy as SP
 import pymps as mp
+
+import time
+from numba import jit
+
+# =============================================================================
+# @jit
+# def eigensolver(T,num_evals):
+#     #evals, evecs = SP.linalg.eigh_tridiagonal(d, e, select='i', select_range=[0,num_evals-1]) 
+#     evals, evecs = la.eigs(T,k=num_evals,which='SR') 
+#     return evals, evecs
+# =============================================================================
 #import lanczos
 
 class SweepOpt:
@@ -155,7 +166,6 @@ class SweepOpt:
         MPS : Tensor Network
             Matrix Product State
         """
-#        print("in forward sweet",self.MPS)
         nsites = len(self.MPS)
         for i in range(nsites-1):
             if i==0:
@@ -178,19 +188,19 @@ class SweepOpt:
                 dim_hsuper*=hsuper_shape[k]
             
             hsuper_matrix = np.reshape(hsuper_node.tensor, (dim_hsuper,dim_hsuper))
-           # print("H super block =",hsuper_matrix)
-            #init_vec = self.mpscopy[i].tensor.flatten()
-            #energies, evecs = la.eigsh(hsuper_matrix,k=1,which='SA',v0=init_vec)
-            #energies, evecs = SP.linalg.eigh(hsuper_matrix, subset_by_index=[0,0])
-           # energies, evecs = la.eigs(hsuper_matrix,k=1,which='SR')
-            num_iter = self.MPS[i].tensor.flatten().shape[0]
-            energies, evecs = mp.lanczos(hsuper_matrix,num_iter-1,1)
-            #energies, evecs = eigensolver(hsuper_matrix,1)
+
+            energies, evecs = la.eigs(hsuper_matrix,k=1,which='SR',maxiter=len(hsuper_matrix))
+
+#THE FOLLOWING CODE IS TO ENABLE LANCZOS DIAGONALIZATION
 # =============================================================================
-#             print("LENGTH",hsuper_matrix.shape[0])
-#             input()
+#             num_iter = len(hsuper_matrix)-1
+# # =============================================================================
+# #             if len(hsuper_matrix) > 30:
+# #                 num_iter=30
+# # =============================================================================
+#             energies, evecs = mp.lanczos(hsuper_matrix,num_iter,1)
 # =============================================================================
-            
+
             energy = min(energies)
             min_idx=np.argmin(energies)
             
@@ -220,8 +230,9 @@ class SweepOpt:
             
             self.MPS[i].tensor = q.tensor
             self.MPS_star=tn.replicate_nodes(self.MPS,conjugate=True)
-            print('site {}:   Energy={}\n'.format(i,energies))
-        return energy, energies, self.MPS
+            print('site {}:   Energy={}\n'.format(i,energies.real))
+            #print('time for eig',t2-t1)
+        return energy.real, energies.real, self.MPS
 
     
     def _backward_sweep(self):
@@ -258,13 +269,18 @@ class SweepOpt:
                 dim_hsuper*=hsuper_shape[k]
             
             hsuper_matrix = np.reshape(hsuper_node.tensor, (dim_hsuper,dim_hsuper))
-            #init_vec = self.mpscopy[i].tensor.flatten()
-            #energies, evecs = la.eigsh(hsuper_matrix,k=1,which='SA',v0=init_vec)
-            #energies, evecs = SP.linalg.eigh(hsuper_matrix, subset_by_index=[0,0])
-            #energies, evecs = la.eigs(hsuper_matrix,k=1,which='SR')
-            num_iter = self.MPS[i].tensor.flatten().shape[0]
-            energies, evecs = mp.lanczos(hsuper_matrix,num_iter-1,1)
+
+#THE FOLLOWING CODE IS TO ENABLE LANCZOS DIAGONALIZATION           
+# =============================================================================
+#             num_iter = len(hsuper_matrix)-1
+# # =============================================================================
+# #             if len(hsuper_matrix) > 100:
+# #                 num_iter=100
+# # =============================================================================
+#             energies, evecs = mp.lanczos(hsuper_matrix,num_iter,1)
+# =============================================================================
             #energies, evecs = eigensolver(hsuper_matrix,1)
+            energies, evecs = la.eigs(hsuper_matrix,k=1,which='SR',maxiter=len(hsuper_matrix))
             
                         
             energy = min(energies)
@@ -295,8 +311,8 @@ class SweepOpt:
                 self.MPS[i-1].tensor = tn.ncon([self.MPS[i-1].tensor, r.tensor],[(-1,-2,'k'),('k',-3)])
             self.MPS[i].tensor = q.tensor
             self.MPS_star=tn.replicate_nodes(self.MPS,conjugate=True)
-            print('site {}:   Energy={}\n'.format(i,energies))
-        return energy, energies, self.MPS
+            print('site {}:   Energy={}\n'.format(i,energies.real))
+        return energy.real, energies.real, self.MPS
 
 
 
