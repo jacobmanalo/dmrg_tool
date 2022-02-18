@@ -6,7 +6,7 @@ import scipy as SP
 import pymps as mp
 
 import time
-from numba import jit
+#from numba import jit
 
 # =============================================================================
 # @jit
@@ -31,6 +31,7 @@ class SweepOpt:
     
     """
     
+    
     def __init__(self, ham, MPS):
         self.ham = tn.replicate_nodes(ham, conjugate=False)
         self.MPS = tn.replicate_nodes(MPS, conjugate=False)
@@ -40,6 +41,19 @@ class SweepOpt:
         for i in range(len(self.MPS)):
             self.ham[i]["n_{}".format(i)]^self.MPS[i]["n_{}".format(i)]
             self.ham[i]["n_{}p".format(i)]^self.MPS_star[i]["n_{}".format(i)]
+        
+        self.L = {}
+        self.R = {}
+        for p in range(self.n_sites-1,0,-1):
+            if p == self.n_sites-1:
+                self.R[p-1] = tn.ncon([self.MPS_star[p].tensor,self.ham[p].tensor,self.MPS[p].tensor],\
+                            [('n{}p'.format(p),-1),('n{}p'.format(p),'n{}'.format(p),-2),('n{}'.format(p),-3)])
+            else:
+                self.R[p-1] = tn.ncon([self.MPS_star[p].tensor,self.ham[p].tensor,self.MPS[p].tensor,self.R[p]],\
+                            [('n{}p'.format(p),-1,1),('n{}p'.format(p),'n{}'.format(p),-2,2),\
+                             ('n{}'.format(p),-3,3),(1,2,3)])
+        
+        
     
     def fit(self, num_sweeps):
         """
@@ -65,92 +79,39 @@ class SweepOpt:
         for sweep in range(num_sweeps):
             print("Sweep Number: {} \n".format(sweep))
             if sweep_forward:
-                energy, energies, mps = self._forward_sweep()
+                energy = self._forward_sweep()
                 sweep_forward = False
             else:
-                energy, energies, mps = self._backward_sweep()
+                energy = self._backward_sweep()
                 sweep_forward = True
-        return energy, energies, mps
+        return energy, self.MPS
+    
+# =============================================================================
+#     def init_R_block(self):
+#         #self.R = {}
+#         for p in range(self.n_sites-1,0,-1):
+#             if p == self.n_sites-1:
+#                 self.R[p-1] = tn.ncon([self.MPS_star[p].tensor,self.ham[p].tensor,self.MPS[p].tensor],\
+#                             [('n{}p'.format(p),-1),('n{}p'.format(p),'n{}'.format(p),-2),('n{}'.format(p),-3)])
+#             else:
+#                 self.R[p-1] = tn.ncon([self.MPS_star[p].tensor,self.ham[p].tensor,self.MPS[p].tensor,self.R[p]],\
+#                             [('n{}p'.format(p),-1,1),('n{}p'.format(p),'n{}'.format(p),-2,2),\
+#                              ('n{}'.format(p),-3,3),(1,2,3)]) 
+#         return self.R
+# =============================================================================
                 
-    
-    def create_L(self,pos):
-        """
-        Creates the left block consisting up to site 'i'. An example diagram
-        is shown below
-        
-        o--o--...--o--
-        |  |       |
-        x--x--...--x--
-        |  |       |
-        o--o--...--o--
-        0  1     i-1
-        
-        where the 'o's are the MPS nodes and the 'x's are the
-        MPO nodes.
-
-        Parameters
-        ----------
-        pos : int
-            Creates left block up to, but not including this site.
-
-        Returns
-        -------
-        L : Tensor Network
-            Left block.
-
-        """
-
-        if pos == 0:
-            L = []
-        else:
-            for p in range(pos):
-                if p == 0:
-                    L = tn.ncon([self.MPS_star[p].tensor,self.ham[p].tensor,self.MPS[p].tensor],\
-                                [('n{}p'.format(p),-1),('n{}p'.format(p),'n{}'.format(p),-2),('n{}'.format(p),-3)])
-                else:
-                    L = tn.ncon([L,self.MPS_star[p].tensor,self.ham[p].tensor,self.MPS[p].tensor],\
-                                [(1,2,3),('n{}p'.format(p),1,-1),('n{}p'.format(p),'n{}'.format(p),2,-2),\
-                                 ('n{}'.format(p),3,-3)]) 
-        return L
-    
-    def create_R(self,pos):
-        """
-        Creates the right block consisting up to site 'i'. An example diagram
-        is shown below
-        
-        --o--...--o--o
-          |       |  |
-        --x--...--x--x
-          |       |  |
-        --o--...--o--o
-          i+1    L-2 L-1  
-        
-        where the 'o's are the MPS nodes and the 'x's are the
-        MPO nodes.
-
-        Parameters
-        ----------
-        pos : int
-            Creates right block up to, but not including this site.
-
-        Returns
-        -------
-        R : Tensor Network
-            right block.
-
-        """
-        if pos == self.n_sites-1:
-            R = []
-        else:
-            for p in range(self.n_sites-1,pos,-1):
-                if p == self.n_sites-1:
-                    R = tn.ncon([self.MPS_star[p].tensor,self.ham[p].tensor,self.MPS[p].tensor],\
-                                [('n{}p'.format(p),-1),('n{}p'.format(p),'n{}'.format(p),-2),('n{}'.format(p),-3)])
-                else:
-                    R = tn.ncon([R,self.MPS_star[p].tensor,self.ham[p].tensor,self.MPS[p].tensor],\
-                                [(1,2,3),('n{}p'.format(p),-1,1),('n{}p'.format(p),'n{}'.format(p),-2,2),\
-                                 ('n{}'.format(p),-3,3)]) 
-        return R
+# =============================================================================
+#     def init_R_block(self):
+#         for p in range(self.n_sites-1,0,-1):
+#             if p == self.n_sites-1:
+#                 self.R[p-1] = tn.ncon([self.MPS_star[p].tensor,self.ham[p].tensor,self.MPS[p].tensor],\
+#                             [('n{}p'.format(p),-1),('n{}p'.format(p),'n{}'.format(p),-2),('n{}'.format(p),-3)])
+#             else:
+#                 self.R[p-1] = tn.ncon([self.MPS_star[p].tensor,self.ham[p].tensor,self.MPS[p].tensor,self.R[p]],\
+#                             [('n{}p'.format(p),-1,1),('n{}p'.format(p),'n{}'.format(p),-2,2),\
+#                              ('n{}'.format(p),-3,3),(1,2,3)]) 
+#         return self.R    
+# =============================================================================
         
     def _forward_sweep(self):
         """
@@ -169,13 +130,13 @@ class SweepOpt:
         nsites = len(self.MPS)
         for i in range(nsites-1):
             if i==0:
-                rblock = self.create_R(i)
-                hsuper = tn.ncon([self.ham[i].tensor,rblock],[(-1,-3,'i{}'.format(i)),(-2,'i{}'.format(i),-4)])
+                #rblock = self.create_R(i)
+                hsuper = tn.ncon([self.ham[i].tensor,self.R[i]],[(-1,-3,'i{}'.format(i)),(-2,'i{}'.format(i),-4)])
                 
             else:
-                lblock = self.create_L(i)
-                rblock = self.create_R(i)
-                hsuper = tn.ncon([lblock,self.ham[i].tensor,rblock],[(-2,'d',-5),(-1,-4,'d','i'),(-3,'i',-6)])
+                #lblock = self.create_L(i)
+               # rblock = self.create_R(i)
+                hsuper = tn.ncon([self.L[i],self.ham[i].tensor,self.R[i]],[(-2,'d',-5),(-1,-4,'d','i'),(-3,'i',-6)])
                 
             num_edges_to_con = len(np.shape(self.ham[i]))-1
             hsuper_node = tn.Node(hsuper)
@@ -189,7 +150,8 @@ class SweepOpt:
             
             hsuper_matrix = np.reshape(hsuper_node.tensor, (dim_hsuper,dim_hsuper))
 
-            energies, evecs = la.eigs(hsuper_matrix,k=1,which='SR',maxiter=len(hsuper_matrix))
+            #energies, evecs = la.eigs(hsuper_matrix,k=1,which='SR',maxiter=len(hsuper_matrix))
+            energies, evecs = la.eigsh(hsuper_matrix,k=1,which='SA')
 
 #THE FOLLOWING CODE IS TO ENABLE LANCZOS DIAGONALIZATION
 # =============================================================================
@@ -205,6 +167,10 @@ class SweepOpt:
             min_idx=np.argmin(energies)
             
             new_m = np.reshape(evecs[:,min_idx],np.shape(self.MPS[i].tensor))
+            
+          #  print("SHAPE BEFORE DIAG",self.MPS[i].tensor.shape)
+          #  print(self.MPS[i].tensor,i,"\n","before")
+            #input()
             
             self.MPS[i].tensor = new_m
             
@@ -227,12 +193,41 @@ class SweepOpt:
                 self.MPS[i+1].tensor = tn.ncon([r.tensor,self.MPS[i+1].tensor],[(-2,'k'),(-1,'k')])
             else:
                 self.MPS[i+1].tensor = tn.ncon([r.tensor,self.MPS[i+1].tensor],[(-2,'k'),(-1,'k',-3)])
+                
+            
+            self.MPS_star[i+1] = tn.replicate_nodes([self.MPS[i+1]],conjugate=True)[0]
             
             self.MPS[i].tensor = q.tensor
-            self.MPS_star=tn.replicate_nodes(self.MPS,conjugate=True)
+            self.MPS_star[i] = tn.replicate_nodes([self.MPS[i]],conjugate=True)[0]
+            
+            
+            #print(self.MPS[i].tensor,i,"\n","after")
+            #input()
+            
+            #self.MPS_star=tn.replicate_nodes(self.MPS,conjugate=True)
             print('site {}:   Energy={}\n'.format(i,energies.real))
             #print('time for eig',t2-t1)
-        return energy.real, energies.real, self.MPS
+           # print(i,self.R[i].shape,"SHAPE OF R")
+           # print("SHAPE AFTER DIAG",self.MPS[i].tensor.shape)
+            #UPDATE L AND R
+            if i < nsites-2:
+                self.R[i] = tn.ncon([self.MPS_star[i+1].tensor,self.ham[i+1].tensor,self.MPS[i+1].tensor,self.R[i+1]],\
+                            [('n{}p'.format(i),-1,1),('n{}p'.format(i),'n{}'.format(i),-2,2),\
+                             ('n{}'.format(i),-3,3),(1,2,3)])
+            else:
+                self.R[i] = tn.ncon([self.MPS_star[i+1].tensor,self.ham[i+1].tensor,self.MPS[i+1].tensor],\
+                            [('n{}p'.format(i),-1),('n{}p'.format(i),'n{}'.format(i),-2),\
+                             ('n{}'.format(i),-3)])
+                
+            
+            if i == 0:
+                self.L[i+1] = tn.ncon([self.MPS_star[i].tensor,self.ham[i].tensor,self.MPS[i].tensor],\
+                                [('n{}p'.format(i),-1),('n{}p'.format(i),'n{}'.format(i),-2),('n{}'.format(i),-3)])
+            else:
+                self.L[i+1] = tn.ncon([self.L[i],self.MPS_star[i].tensor,self.ham[i].tensor,self.MPS[i].tensor],\
+                                [(1,2,3),('n{}p'.format(i),1,-1),('n{}p'.format(i),'n{}'.format(i),2,-2),\
+                                 ('n{}'.format(i),3,-3)]) 
+        return energy.real
 
     
     def _backward_sweep(self):
@@ -252,12 +247,12 @@ class SweepOpt:
         nsites = len(self.MPS)
         for i in range(nsites-1,0,-1):
             if i == nsites-1:
-                lblock = self.create_L(i)
-                hsuper = tn.ncon([lblock,self.ham[i].tensor],[(-2,'d',-4),(-1,-3,'d')])
+               # lblock = self.create_L(i)
+                hsuper = tn.ncon([self.L[i],self.ham[i].tensor],[(-2,'d',-4),(-1,-3,'d')])
             else:
-                lblock = self.create_L(i)
-                rblock = self.create_R(i)
-                hsuper = tn.ncon([lblock,self.ham[i].tensor,rblock],[(-2,'d',-5),(-1,-4,'d','i'),(-3,'i',-6)])
+               # lblock = self.create_L(i)
+               # rblock = self.create_R(i)
+                hsuper = tn.ncon([self.L[i],self.ham[i].tensor,self.R[i]],[(-2,'d',-5),(-1,-4,'d','i'),(-3,'i',-6)])
             
             num_edges_to_con = len(np.shape(self.ham[i]))-1
             hsuper_node = tn.Node(hsuper)
@@ -280,7 +275,8 @@ class SweepOpt:
 #             energies, evecs = mp.lanczos(hsuper_matrix,num_iter,1)
 # =============================================================================
             #energies, evecs = eigensolver(hsuper_matrix,1)
-            energies, evecs = la.eigs(hsuper_matrix,k=1,which='SR',maxiter=len(hsuper_matrix))
+            #energies, evecs = la.eigs(hsuper_matrix,k=1,which='SR',maxiter=len(hsuper_matrix))
+            energies, evecs = la.eigsh(hsuper_matrix,k=1,which='SA')
             
                         
             energy = min(energies)
@@ -309,14 +305,56 @@ class SweepOpt:
                 self.MPS[i-1].tensor = tn.ncon([self.MPS[i-1].tensor, r.tensor],[(-1,'k'),('k',-2)])
             else:
                 self.MPS[i-1].tensor = tn.ncon([self.MPS[i-1].tensor, r.tensor],[(-1,-2,'k'),('k',-3)])
+            self.MPS_star[i-1] = tn.replicate_nodes([self.MPS[i-1]],conjugate=True)[0]
+            
             self.MPS[i].tensor = q.tensor
-            self.MPS_star=tn.replicate_nodes(self.MPS,conjugate=True)
+            self.MPS_star[i] = tn.replicate_nodes([self.MPS[i]],conjugate=True)[0]
+
+            if i > 1:
+                self.L[i] = tn.ncon([self.L[i-1],self.MPS_star[i-1].tensor,self.ham[i-1].tensor,self.MPS[i-1].tensor],\
+                                [(1,2,3),('n{}p'.format(i),1,-1),('n{}p'.format(i),'n{}'.format(i),2,-2),\
+                                 ('n{}'.format(i),3,-3)])   
+            else:
+                self.L[i] = tn.ncon([self.MPS_star[i-1].tensor,self.ham[i-1].tensor,self.MPS[i-1].tensor],\
+                                [('n{}p'.format(i),-1),('n{}p'.format(i),'n{}'.format(i),-2),\
+                                 ('n{}'.format(i),-3)])   
+                    
+            
+            
+            
+            
+            if i == nsites-1:
+                self.R[i-1] = tn.ncon([self.MPS_star[i].tensor,self.ham[i].tensor,self.MPS[i].tensor],\
+                            [('n{}p'.format(i),-1),('n{}p'.format(i),'n{}'.format(i),-2),('n{}'.format(i),-3)])
+            else:
+                self.R[i-1] = tn.ncon([self.MPS_star[i].tensor,self.ham[i].tensor,self.MPS[i].tensor,self.R[i]],\
+                            [('n{}p'.format(i),-1,1),('n{}p'.format(i),'n{}'.format(i),-2,2),\
+                             ('n{}'.format(i),-3,3),(1,2,3)])
+            ######
+            
+# =============================================================================
+#             if i == 0:
+#                 self.L[i+1] = tn.ncon([self.MPS_star[i].tensor,self.ham[i].tensor,self.MPS[i].tensor],\
+#                                 [('n{}p'.format(i),-1),('n{}p'.format(i),'n{}'.format(i),-2),('n{}'.format(i),-3)])
+#             else:
+#                 self.L[i+1] = tn.ncon([self.L[i],self.MPS_star[i].tensor,self.ham[i].tensor,self.MPS[i].tensor],\
+#                                 [(1,2,3),('n{}p'.format(i),1,-1),('n{}p'.format(i),'n{}'.format(i),2,-2),\
+#                                  ('n{}'.format(i),3,-3)])
+# =============================================================================
+            
+            
+            #self.MPS_star=tn.replicate_nodes(self.MPS,conjugate=True)
             print('site {}:   Energy={}\n'.format(i,energies.real))
-        return energy.real, energies.real, self.MPS
+        return energy.real
 
-
+# =============================================================================
+#     def test_fsweep(self):
+#         self.init_R_block()
+#         self._forward_sweep()
+# =============================================================================
 
 def DMRG(n_sites,ham,n_sweeps,psi):
+    #pass
     """
     The DMRG algorithm takes an initial guess MPS and a Hamiltonian in MPO
     form and uses the variational principle to obtain the ground state.
@@ -343,5 +381,5 @@ def DMRG(n_sites,ham,n_sweeps,psi):
 
     """
     sweep_opt = SweepOpt(ham,psi)
-    energy, energies, mps = sweep_opt.fit(n_sweeps)
-    return energy, energies, mps 
+    energy, mps = sweep_opt.fit(n_sweeps)
+    return energy, mps 

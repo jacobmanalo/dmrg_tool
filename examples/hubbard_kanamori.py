@@ -11,7 +11,7 @@ import time
 import sys
 sys.path.append('../') 
 import pymps as mp
-n_dots =2
+n_dots =4
 L = 4*n_dots
 H = mp.Hamiltonian(L)
 
@@ -150,29 +150,64 @@ for i in range(L):
 t2=time.time()
 print("Finished building MPO=",t2-t1)
 
-bonddim = 100
+bonddim = 200
 MPO, MPO_edges = H.GetMPOTensors()
-n_e=2*n_dots
+
+
+#MAKE PSI
+# =============================================================================
+# psi = np.random.random_sample(tuple([2]*L))
+# psi = psi/np.linalg.norm(psi)
+# =============================================================================
+
+print(":)")
+#input()
+# =============================================================================
+# norm= 0.
+# single_tuple = list([0]*L)
+# for i in range(4):
+#     single_tuple[i] = 1
+# for tup in set(itt.permutations(single_tuple,L)):
+#     psi[tup] = np.random.uniform(-1,1)
+#     #norm += np.abs(psi[tup])**2 
+# #norm = np.sqrt(norm)
+# psi = psi/np.linalg.norm(psi)
+# =============================================================================
+#psi = np.random.random_sample(tuple([2]*L))
+
 mps = mp.init_wavefunction(L, bonddim)
 #input()
 #bond_dim=4
 #mps = mp.create_MPS(L,bond_dim)
 
 t1 = time.time()
-energy, energies, MPS = mp.DMRG(L, MPO,2, mps)
+energy, MPS = mp.DMRG(L, MPO,10, mps)
 t2 = time.time()
 
 print("Time of diag=",t2-t1)
 
-mps_con = []
-for i in range(1,L):
-    MPS[i-1]["i_{}".format(i-1)] ^ MPS[i]["i_{}".format(i-1)]
-    #mps_con.append(con)
 
-test=MPS[0]
+#mpscopy = tn.replicate_nodes(mps)
+for i in range(L):
+    mps[i].tensor = MPS[i].tensor
+
+# =============================================================================
+# mps_con = []
+# for i in range(1,L):
+#     MPS[i-1]["i_{}".format(i-1)] ^ MPS[i]["i_{}".format(i-1)]
+#     #mps_con.append(con)
+# =============================================================================
+
+# =============================================================================
+# test=MPS[0]
+# for i in range(1,L):
+#     test@=MPS[i]
+# =============================================================================
+
+test=mps[0]
 for i in range(1,L):
-    test@=MPS[i]
-    
+    test@=mps[i]
+
 #test1 = tn.contract(mps_con)
 #test=MPS[0]@MPS[1]@MPS[2]
 
@@ -181,6 +216,10 @@ number_e=np.count_nonzero(np.transpose(np.where(np.abs(test.tensor)>=1e-10))[0])
 
 print('Energy = {}'.format(energy+number_e*chem_pot))
 print("Number of particles = {}".format(number_e))
+
+f = open("GS_energy_{}dot.dat".format(n_dots),"w")
+f.write("Energy = {}, Number of electrons = {}, Bond dimension = {}".format(energy+number_e*chem_pot, number_e, bonddim))
+f.close()
 
 # =============================================================================
 # for i in range(L):
