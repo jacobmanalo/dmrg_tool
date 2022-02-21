@@ -94,7 +94,7 @@ def FermiOp(i, L, dagged):
     return LocalOperator(O,L)
 
     
-class Hamiltonian:
+class QuantumOperator:
     """A simple Hamiltonian class"""  
     
     def __init__(self, L):
@@ -134,7 +134,7 @@ class Hamiltonian:
                  for n1 in range(2):
                      for i in range(nterms):
                         H[j,n,n1,i] = np.dot(states[n],np.matmul(self.Ovec[j,i],states[n1]))
-                        print("{},".format(n),"{},".format(n1),"{},".format(j),"{},".format(i),H[j,n,n1,i])
+                        #print("{},".format(n),"{},".format(n1),"{},".format(j),"{},".format(i),H[j,n,n1,i])
                         
          return H
  
@@ -171,3 +171,23 @@ class Hamiltonian:
             connected_edges2.append(conn2)
         
          return hMPO,connected_edges2
+     
+    def ExpectatioValue(self, MPS):
+        if len(MPS) != self.L:
+           print("Operator and states of differents sizes")
+           return
+        ham, _ = self.GetMPOTensors()
+        MPS_star = tn.replicate_nodes(MPS,conjugate=True)
+        e = tn.ncon([MPS_star[0].tensor,ham[0].tensor,MPS[0].tensor],[('np',-1),('np','n',-2),('n',-3)])
+        for i in range(1,self.L-1):
+          e = tn.ncon([e,MPS_star[i].tensor, ham[i].tensor, MPS[i].tensor], [(1,2,3),('np',1,-1),('np','n',2,-2),('n',3,-3)])         
+                    
+        e = tn.ncon([e,MPS_star[self.L-1].tensor, ham[self.L-1].tensor, MPS[self.L-1].tensor], \
+                                [(1,2,3),('np',1),('np','n',2),('n',3)])       
+            
+        return abs(e.max())
+            
+         
+        
+
+    
