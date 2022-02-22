@@ -9,6 +9,7 @@ https://www.youtube.com/watch?v=S416IbCFeEA&t=185s
 import numpy as np
 from scipy.sparse import linalg as la
 import scipy as SP
+import sys
 
 def random_hermitian(n):
     #A=np.random.rand(n,n)
@@ -144,34 +145,157 @@ def lanczos(A, r0, num_iter, num_evals):
 
     return evals.real, evecs_transformed.real
 
-def lanczos2(A, r0, num_iter, num_evals):
+
+
+def lanczos2(A, r0, num_iter):
+    """
+    Obtain the lowest eigevalue and eigenvector of a Linear Operator A
+    Implementation of Lanczos algorithm. 
+    Following section 4.4 of the book " Templates for the solution of algebraic 
+    eigenvalue problems: a practical guide"
+    Parameters
+    ----------
+    A : Linear Operator 
+        A linaer operador with the matrix a matrix-vector multiplication (matvec)  as
+        a member function.
+    r0: ket state compatible with the linear operator
+        Initial guest. Compatible mean that the operation A.matvec(r0) is defined
+    num_iter : int
+        Number max of iteration
+    Returns
+    -------
+    evals : lowest eigenvalue- float 64 
+        
+    evecs_transformed : ket corresponding to the lowest eigenvalue
+    """
     a = []
     b = []
-    m = r0.shape[0]
-    v = np.zeros((m, num_iter)) #change for a dynamic version
+    shape = r0.shape
+#    for i in range(len(r0.shape)):
+#      shape.append(r0.shape[i])
+#    #shape = r0.shape
+    v = []    
+    eps = sys.float_info.min
+    tol = 1e-10
+    eval_ref = 1
+    ntest = 5 
+    num_iter_max = num_iter + ntest - num_iter%ntest
+    r = r0
     norm = np.linalg.norm(r0)
-    eps = 1e-20
-    if norm < eps:
-        r = np.random.rand(m)
-        norm = np.linalg.norm(r)
-        b.append(norm)
-    else: 
-       r = r0
-       b.append(norm)
+    b.append(norm)
     id = 0
-    for i in range(num_iter):
-        id = i
-        if b[i] < eps:
-            print("norm is zero!",i,b[i]) # to improve 
-            break
-        v[:,i] = (r/b[i])
-        r = A.dot(v[:,i])
+    for i in range(num_iter_max):
+        id = i        
+        if b[i] < abs(eps*eval_ref):
+            r = np.random.rand(shape)
+            r *= 1./np.linalg.norm(r)
+            Orthogonalize(r,v)
+            b[i] = np.linalg.norm(r)
+            
+        v.append(r/b[i])
+        r = A.matvec(v[i])
         if i > 0:
-            r = r - b[i]*v[:,i-1]
-        a.append(np.dot(v[:,i],r))
-        r = r - a[i]*v[:,i]
+            r -= b[i]*v[i-1]
+        a.append(np.sum(v[i]*r))
+        r -= a[i]*v[i]
+        Orthogonalize(r,v)
         b.append(np.linalg.norm(r))
+        if (i+1)%ntest == 0:
+          evals, evecs = SP.linalg.eigh_tridiagonal(a,b[1:id+1],select='i', select_range=[0,0])
+          error = abs(b[i+1]*evecs[i])
+          eval_ref = evals
+          if error < tol:
+             break
+    if error > tol:
+        print("Lanczos failed, residual norm = {}".format(error))
+      
+    #res = np.transpose(v).dot(evecs)
     
-    evals, evecs = SP.linalg.eigh_tridiagonal(a,b[1:id+1],select='i', select_range=[0,num_evals-1])
-    res = v.dot(evecs)
-    return evals, res/np.linalg.norm(res) 
+    evecs_transformed = v[0]*evecs[0]    
+    for i in range(1,id):
+        evecs_transformed += v[i]*evecs[i] 
+    
+    return evals, evecs_transformed/np.linalg.norm(evecs_transformed) 
+
+
+
+def Orthogonalize(r,v):
+    """
+    Ortogonalize vector r with the vectors 
+    contained in v
+    """
+    fac = 0.7
+    tol = 1e-14
+    n0 = np.linalg.norm(r)
+    for i in range(len(v)):
+        prod = np.sum(r*v[i])
+        if abs(prod) > tol:
+            r -= prod*v[i]
+    if np.linalg.norm(r)/n0 < fac:
+        return
+    for i in range(len(v)):
+        prod = np.sum(r*v[i])
+        if abs(prod) > tol:
+            r -= prod*v[i]
+            
+#def lanczos2t(A, r0, num_iter):
+#    """
+#    Obtain the lowest eigevalue and eigenvector of a Linear Operator A
+#    Implementation of Lanczos algorithm. 
+#    Following section 4.4 of the book " Templates for the solution of algebraic 
+#    eigenvalue problems: a practical guide"
+#    Parameters
+#    ----------
+#    A : Linear Operator
+#    
+#    r0: vector
+#        Initial guest 
+#    num_iter : int
+#        Number max of iteration
+#    Returns
+#    -------
+#    evals : numpy array
+#        Array of eigenvalues
+#    evecs_transformed : numpy array
+#        Array of eigenvectors in the original basis of A
+#    """
+#    a = []
+#    b = []
+#    m = r0.shape[0]
+#    v = []    
+#    eps = sys.float_info.min
+#    tol = 1e-13
+#    eval_ref = 1
+#    num_iter_max = num_iter + 5 - num_iter%5
+#    r = r0
+#    norm = np.linalg.norm(r0)
+#    b.append(norm)
+#    id = 0
+#    for i in range(num_iter_max):
+#        id = i
+#        
+#        if b[i] < abs(eps*eval_ref):
+#            r = np.random.rand(m)
+#            r *= 1./np.linalg.norm(r)
+#            Orthogonalize(r,v)
+#            b[i] = np.linalg.norm(r)
+#            
+#        v.append(r/b[i])
+#        r = A.dot(v[i])
+#        if i > 0:
+#            r -= b[i]*v[i-1]
+#        a.append(np.dot(v[i],r))
+#        r -= a[i]*v[i]
+#        Orthogonalize(r,v)
+#        b.append(np.linalg.norm(r))
+#        if (i+1)%5 == 0:
+#          evals, evecs = SP.linalg.eigh_tridiagonal(a,b[1:id+1],select='i', select_range=[0,0])
+#          error = abs(b[i+1]*evecs[i])
+#          eval_ref = evals
+#          if error < tol:
+#             break
+#    if error > tol:
+#        print("Lanczos failed, residual norm = {}".format(error))
+#      
+#    res = np.transpose(v).dot(evecs)
+#    return evals, res/np.linalg.norm(res) 

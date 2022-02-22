@@ -11,7 +11,7 @@ import time
 import sys
 sys.path.append('../') 
 import pymps as mp
-n_dots = 4                      
+n_dots = 10              
 L = 4*n_dots
 
 
@@ -151,7 +151,7 @@ for i in range(L):
 t2=time.time()
 print("Finished building MPO=",t2-t1)
 
-bonddim = 30
+bonddim = 60
 MPO, MPO_edges = H.GetMPOTensors()
 
 

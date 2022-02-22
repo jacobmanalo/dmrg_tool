@@ -20,7 +20,7 @@ import time
 
 def SuperBlockLO(L, W, R):
     """
-    A class function to define an auxiliary superblock Linear Operator. It the tensor L, W 
+    A  function to define an auxiliary superblock Linear Operator. It the tensor L, W 
     and R,  and  defines the rules for aplication on vectors   
     """
     if L.shape[0] == 0:
@@ -62,8 +62,37 @@ def SuperBlockLO(L, W, R):
     
     return la.LinearOperator(shape=shape, matvec=matvec, rmatvec=matvec, dtype=dtype) 
     
-    
-        
+class SuperBlockLO1:
+    """
+    A class function to define an auxiliary superblock Linear Operator. It the tensor L, W 
+    and R,  and  defines the rules for aplication on vectors   
+    """
+    def __init__(self, L, W, R):
+        self.L = L
+        self.R = R
+        self.W = W
+#       if L.shape[0] == 0:
+#          self.shape = (W.shape[0],R.shape[0])
+#          def matvec1(self,y):
+#            new_v =  tn.ncon([W, R, y], [(-1,'c','i'),(-3,'i','b'),('c','b')])
+#            return new_v
+#       elif R.shape[0] == 0:
+#          self.shape = (W.shape[0],L.shape[0])
+#          def matvec1(self,y):
+#            new_v =  
+#            return new_v
+#       else:
+#           self.shape = (W.shape[0],L.shape[0],R.shape[0])        
+#           def matvec(self,y):          
+#            new_v =  tn.ncon([L, W, R, y], [(-2,'d','a'),(-1,'c','d','i'),(-3,'i','b'),('c','a','b')])
+#            return new_v
+    def matvec(self,y):
+        if self.L.shape[0] == 0:
+          return tn.ncon([self.W, self.R, y], [(-1,'c','i'),(-3,'i','b'),('c','b')])
+        if self.R.shape[0] == 0:
+           return tn.ncon([self.L, self.W, y], [(-2,'d','a'),(-1,'c','d'),('c','a')])
+       
+        return tn.ncon([self.L, self.W, self.R, y], [(-2,'d','a'),(-1,'c','d','i'),(-3,'i','b'),('c','a','b')])
 class SweepOpt:
     """
     A class for the sweeping optimization routine in the DMRG algorithm. It takes
@@ -178,25 +207,28 @@ class SweepOpt:
         for i in range(nsites-1):
             if i==0:
                 #hsuper = tn.ncon([self.ham[i].tensor,self.R[i]],[(-1,-3,'i{}'.format(i)),(-2,'i{}'.format(i),-4)])
-                hsuper = SuperBlockLO(np.zeros(0), self.ham[i].tensor, self.R[i])
+                #hsuper = SuperBlockLO(np.zeros(0), self.ham[i].tensor, self.R[i])
+                hsuper = SuperBlockLO1(np.zeros(0), self.ham[i].tensor, self.R[i])
             else:
                 #hsuper = tn.ncon([self.L[i],self.ham[i].tensor,self.R[i]],[(-2,'d',-5),(-1,-4,'d','i'),(-3,'i',-6)])
-                hsuper = SuperBlockLO(self.L[i], self.ham[i].tensor, self.R[i])
+                #hsuper = SuperBlockLO(self.L[i], self.ham[i].tensor, self.R[i])
+                hsuper = SuperBlockLO1(self.L[i], self.ham[i].tensor, self.R[i])
 #            num_edges_to_con = len(np.shape(self.ham[i]))-1
                 
             num_iter = min(np.prod(self.MPS[i].tensor.shape),30)
-            v0 = np.reshape(self.MPS[i].tensor,hsuper.shape[0])
+            #v0 = np.reshape(self.MPS[i].tensor,hsuper.shape[0])
             #energies, evecs = la.eigsh(hsuper1,k=1,which='SA', v0=v0)
             #energies, evecs = la.eigsh(hsuper,k=1,which='SA')
 #            energies, evecs = mp.lanczos(hsuper,v0,num_iter,1)
-            energies, evecs = lanczos2(hsuper,v0,num_iter,1)
+#            energies, evecs = lanczos2(hsuper,v0,num_iter)
+            energies, evecs = lanczos2(hsuper,self.MPS[i].tensor,num_iter)
+#            print(energies-energies1)
 
            
-
-
+           
             
             energy = min(energies)
-            min_idx=np.argmin(energies)
+            
             
 #            new_m = np.reshape(evecs[:,min_idx],np.shape(self.MPS[i].tensor))
             
@@ -204,7 +236,8 @@ class SweepOpt:
           #  print(self.MPS[i].tensor,i,"\n","before")
             #input()
             
-            self.MPS[i].tensor = np.reshape(evecs[:,min_idx],np.shape(self.MPS[i].tensor))
+            #self.MPS[i].tensor = np.reshape(evecs,np.shape(self.MPS[i].tensor))
+            self.MPS[i].tensor = evecs
             
             #DO SVD LEFT NORMALIZATION ON NEWFOUND M
             if i == 0:
@@ -280,28 +313,27 @@ class SweepOpt:
         for i in range(nsites-1,0,-1):
             if i == nsites-1:
                 #hsuper = tn.ncon([self.L[i],self.ham[i].tensor],[(-2,'d',-4),(-1,-3,'d')])
-                hsuper = SuperBlockLO(self.L[i], self.ham[i].tensor, np.zeros(0))
+                #hsuper = SuperBlockLO(self.L[i], self.ham[i].tensor, np.zeros(0))
+                hsuper = SuperBlockLO1(self.L[i], self.ham[i].tensor, np.zeros(0))
             else:
                 #hsuper = tn.ncon([self.L[i],self.ham[i].tensor,self.R[i]],[(-2,'d',-5),(-1,-4,'d','i'),(-3,'i',-6)])
-                hsuper = SuperBlockLO(self.L[i],self.ham[i].tensor, self.R[i])
+                #hsuper = SuperBlockLO(self.L[i],self.ham[i].tensor, self.R[i])
+                hsuper = SuperBlockLO1(self.L[i],self.ham[i].tensor, self.R[i])
                 
             num_iter = min(np.prod(self.MPS[i].tensor.shape)-1,100)
-            v0 = np.reshape(self.MPS[i].tensor,hsuper.shape[0])
+            #v0 = np.reshape(self.MPS[i].tensor,hsuper.shape[0])
             #energies, evecs = la.eigsh(hsuper1,k=1,which='SA')
             #energies, evecs = la.eigsh(hsuper,k=1,which='SA', v0=v0)
             #energies, evecs = mp.lanczos(hsuper,v0,num_iter,1)
-            energies, evecs = lanczos2(hsuper,v0,num_iter,1)
-            
-
-                
-            
+            #energies, evecs = lanczos2(hsuper,v0,num_iter)
+            energies, evecs = lanczos2(hsuper,self.MPS[i].tensor,num_iter)
+            self.MPS[i].tensor = evecs        
                         
             energy = min(energies)
-            min_idx=np.argmin(energies)
+            #min_idx=np.argmin(energies)
             
-            new_m = np.reshape(evecs[:,min_idx],np.shape(self.MPS[i].tensor))
-            
-            self.MPS[i].tensor = new_m
+           
+            #self.MPS[i].tensor = np.reshape(evecs,np.shape(self.MPS[i].tensor))
             
             #DO SVD RIGHT NORMALIZATION ON NEWFOUND M
             if i == nsites-1:
