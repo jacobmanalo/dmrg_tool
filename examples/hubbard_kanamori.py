@@ -11,7 +11,7 @@ import time
 import sys
 sys.path.append('../') 
 import pymps as mp
-n_dots = 10              
+n_dots = 8       
 L = 4*n_dots
 
 
@@ -151,7 +151,7 @@ for i in range(L):
 t2=time.time()
 print("Finished building MPO=",t2-t1)
 
-bonddim = 60
+bonddim = 400
 MPO, MPO_edges = H.GetMPOTensors()
 
 
@@ -182,7 +182,7 @@ mps = mp.init_wavefunction(L, bonddim)
 #mps = mp.create_MPS(L,bond_dim)
 
 t1 = time.time()
-energy, MPS = mp.DMRG(L, MPO, 2, mps)
+energy, MPS = mp.DMRG(L, MPO, 4, mps)
 t2 = time.time()
 
 print("Time of diag=",t2-t1)
@@ -229,6 +229,20 @@ print("Number of particles = {}".format(round(number_e)))
 f = open("GS_energy_{}dot.dat".format(n_dots),"w")
 f.write("Energy = {}, Number of electrons = {}, Bond dimension = {}".format(energy+number_e*chem_pot, number_e, bonddim))
 f.close()
+
+for i in range(L):
+    w = open("M_{}_for_{}dots.mps".format(i,n_dots),"w")
+    if i == 0 or i == L-1:
+        for l in range(MPS[i].shape[0]):
+            for m in range(MPS[i].shape[1]):
+                w.write("{} {} {}\n".format(l,m,MPS[i].tensor[l,m]))
+    else:
+        for l in range(MPS[i].shape[0]):
+            for m in range(MPS[i].shape[1]):
+                for n in range(MPS[i].shape[2]):
+                    w.write("{} {} {} {}\n".format(l,m,n,MPS[i].tensor[l,m,n]))
+    w.close()
+                    
 
 # =============================================================================
 # for i in range(L):
