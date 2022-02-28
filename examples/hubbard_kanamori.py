@@ -11,7 +11,7 @@ import time
 import sys
 sys.path.append('../') 
 import pymps as mp
-n_dots = 8       
+n_dots = 2
 L = 4*n_dots
 
 
@@ -151,7 +151,7 @@ for i in range(L):
 t2=time.time()
 print("Finished building MPO=",t2-t1)
 
-bonddim = 400
+bonddim = 100
 MPO, MPO_edges = H.GetMPOTensors()
 
 
@@ -175,6 +175,49 @@ print(":)")
 # psi = psi/np.linalg.norm(psi)
 # =============================================================================
 #psi = np.random.random_sample(tuple([2]*L))
+
+
+
+#INITIALIZE WAVEFUNCTION
+# =============================================================================
+# arg=[0]*L
+# for i in range(n_dots):
+#     for alpha in range(2):
+#         if i % 2 == 0:
+#             arg[ix(i,alpha,0)]=1
+#         else:
+#             arg[ix(i,alpha,1)]=1
+# 
+# arg_not = [1-arg[k] for k in range(len(arg))]
+# 
+# 
+# idx = []
+# idx_not = []
+# 
+# idx.append(arg[0])
+# idx_not.append(arg_not[0])
+# for i in range(1,L-1):
+#     idx.append(arg[i]+idx[i-1])
+#     idx_not.append(arg_not[i]+idx_not[i-1])
+# 
+# 
+# M = {}
+# #bond_dim=500
+# 
+# M[0]=np.zeros((2,bonddim))
+# M[0][arg[0],idx[0]]=1.
+# M[0][arg_not[0],idx_not[0]]=np.random.rand()
+# for i in range(1,L-1):
+#     M[i]=np.zeros((2,bonddim,bonddim))
+#     M[i][arg[i],idx[i-1],idx[i]]=np.random.rand()
+#     M[i][arg_not[i],idx_not[i-1],idx_not[i]]=np.random.rand()
+# M[L-1]=np.zeros((2,bonddim))
+# M[L-1][arg[L-1],idx[L-2]]=np.random.rand()
+# M[L-1][arg_not[L-1],idx_not[L-2]]=np.random.rand()
+# 
+# mps = mp.init_wavefunction(M,bonddim)
+# =============================================================================
+
 
 mps = mp.init_wavefunction(L, bonddim)
 #input()
@@ -226,23 +269,25 @@ number_e = n.ExpectatioValue(MPS)
 print('Energy = {}'.format(energy+number_e*chem_pot))
 print("Number of particles = {}".format(round(number_e)))
 
-f = open("GS_energy_{}dot.dat".format(n_dots),"w")
-f.write("Energy = {}, Number of electrons = {}, Bond dimension = {}".format(energy+number_e*chem_pot, number_e, bonddim))
-f.close()
-
-for i in range(L):
-    w = open("M_{}_for_{}dots.mps".format(i,n_dots),"w")
-    if i == 0 or i == L-1:
-        for l in range(MPS[i].shape[0]):
-            for m in range(MPS[i].shape[1]):
-                w.write("{} {} {}\n".format(l,m,MPS[i].tensor[l,m]))
-    else:
-        for l in range(MPS[i].shape[0]):
-            for m in range(MPS[i].shape[1]):
-                for n in range(MPS[i].shape[2]):
-                    w.write("{} {} {} {}\n".format(l,m,n,MPS[i].tensor[l,m,n]))
-    w.close()
-                    
+# =============================================================================
+# f = open("GS_energy_{}dot.dat".format(n_dots),"w")
+# f.write("Energy = {}, Number of electrons = {}, Bond dimension = {}".format(energy+number_e*chem_pot, number_e, bonddim))
+# f.close()
+# 
+# for i in range(L):
+#     w = open("M_{}_for_{}dots.mps".format(i,n_dots),"w")
+#     if i == 0 or i == L-1:
+#         for l in range(MPS[i].shape[0]):
+#             for m in range(MPS[i].shape[1]):
+#                 w.write("{} {} {}\n".format(l,m,MPS[i].tensor[l,m]))
+#     else:
+#         for l in range(MPS[i].shape[0]):
+#             for m in range(MPS[i].shape[1]):
+#                 for n in range(MPS[i].shape[2]):
+#                     w.write("{} {} {} {}\n".format(l,m,n,MPS[i].tensor[l,m,n]))
+#     w.close()
+#                     
+# =============================================================================
 
 # =============================================================================
 # for i in range(L):
