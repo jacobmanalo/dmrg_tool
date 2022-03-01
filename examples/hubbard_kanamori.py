@@ -11,7 +11,7 @@ import time
 import sys
 sys.path.append('../') 
 import pymps as mp
-n_dots = 2
+n_dots = 3
 L = 4*n_dots
 
 
@@ -255,6 +255,25 @@ for i in range(1,L):
 #test1 = tn.contract(mps_con)
 #test=MPS[0]@MPS[1]@MPS[2]
 
+
+"""
+Create S^2 operator
+"""
+S2 = mp.QuantumOperator(L)
+
+for i in range(n_dots):
+    for alpha in range(2):
+        for j in range(n_dots):
+            for beta in range(2):
+                S2.add(Sp(i,alpha)*Sm(j,beta)*0.5) #Sx^2+Sy^2
+                S2.add(Sm(i,alpha)*Sp(j,beta)*0.5) #Sx^2+Sy^2
+                S2.add(N(ix(i,alpha,1))*N(ix(j,beta,1))*(0.25)) #Sz^2
+                S2.add(N(ix(i,alpha,0))*N(ix(j,beta,0))*(0.25)) #Sz^2
+                S2.add(N(ix(i,alpha,1))*N(ix(j,beta,0))*(-0.25)) #Sz^2
+                S2.add(N(ix(i,alpha,0))*N(ix(j,beta,1))*(-0.25)) #Sz^2
+Stot2 = S2.ExpectatioValue(MPS)
+
+
 """
 Defining number operator for expectation value
 """
@@ -266,7 +285,7 @@ number_e = n.ExpectatioValue(MPS)
 #np.transpose(np.where(np.abs(test.tensor)>=1e-10))[0]
 #number_e=np.count_nonzero(np.transpose(np.where(np.abs(test.tensor)>=1e-10))[0])
 
-print('Energy = {}'.format(energy+number_e*chem_pot))
+print('Energy = {}'.format(energy+number_e*chem_pot),'S^2=',Stot2)
 print("Number of particles = {}".format(round(number_e)))
 
 # =============================================================================
