@@ -11,11 +11,7 @@ import time
 import sys
 sys.path.append('../') 
 import pymps as mp
-<<<<<<< HEAD
-n_dots = 2         
-=======
 n_dots = 3
->>>>>>> 7458ede07542113e860c8cab7efc992a253c1bc5
 L = 4*n_dots
 
 
@@ -152,19 +148,11 @@ chem_pot = 20.
 for i in range(L):
    H.add(N(i)*(-chem_pot))
    
-   
-
-
-bonddim = 100
-MPO, MPO_edges = H.GetMPOTensors()
 t2=time.time()
 print("Finished building MPO=",t2-t1)
 
-<<<<<<< HEAD
-=======
 bonddim = 100
 MPO, MPO_edges = H.GetMPOTensors()
->>>>>>> 7458ede07542113e860c8cab7efc992a253c1bc5
 
 
 #MAKE PSI
@@ -244,8 +232,8 @@ print("Time of diag=",t2-t1)
 
 
 #mpscopy = tn.replicate_nodes(mps)
-#for i in range(L):
-#    mps[i].tensor = MPS[i].tensor
+for i in range(L):
+    mps[i].tensor = MPS[i].tensor
 
 # =============================================================================
 # mps_con = []
@@ -260,9 +248,9 @@ print("Time of diag=",t2-t1)
 #     test@=MPS[i]
 # =============================================================================
 
-#test=mps[0]
-#for i in range(1,L):
-#    test@=mps[i]
+test=mps[0]
+for i in range(1,L):
+    test@=mps[i]
 
 #test1 = tn.contract(mps_con)
 #test=MPS[0]@MPS[1]@MPS[2]
@@ -319,19 +307,6 @@ print("Number of particles = {}".format(round(number_e)))
 #     w.close()
 #                     
 # =============================================================================
-
-#m = 200
-#M = 20
-#d = 2
-#L = np.random.random_sample((m,M,m))
-#R = np.random.random_sample((m,M,m))
-#W = np.random.random_sample((d,d,M,M))
-#y = np.random.random_sample((d,m,m))
-#t1 = time.time()
-#yp = tn.ncon([L, W, R, y], [(-2,'d','a'),(-1,'c','d','i'),(-3,'i','b'),('c','a','b')])
-#t2 = time.time()
-#
-#print("Contract time=",t2-t1)
 
 # =============================================================================
 # for i in range(L):
