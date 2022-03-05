@@ -11,7 +11,11 @@ import time
 import sys
 sys.path.append('../') 
 import pymps as mp
+<<<<<<< HEAD
 n_dots = 2         
+=======
+n_dots = 3
+>>>>>>> 7458ede07542113e860c8cab7efc992a253c1bc5
 L = 4*n_dots
 
 
@@ -156,6 +160,11 @@ MPO, MPO_edges = H.GetMPOTensors()
 t2=time.time()
 print("Finished building MPO=",t2-t1)
 
+<<<<<<< HEAD
+=======
+bonddim = 100
+MPO, MPO_edges = H.GetMPOTensors()
+>>>>>>> 7458ede07542113e860c8cab7efc992a253c1bc5
 
 
 #MAKE PSI
@@ -179,13 +188,56 @@ print(":)")
 # =============================================================================
 #psi = np.random.random_sample(tuple([2]*L))
 
+
+
+#INITIALIZE WAVEFUNCTION
+# =============================================================================
+# arg=[0]*L
+# for i in range(n_dots):
+#     for alpha in range(2):
+#         if i % 2 == 0:
+#             arg[ix(i,alpha,0)]=1
+#         else:
+#             arg[ix(i,alpha,1)]=1
+# 
+# arg_not = [1-arg[k] for k in range(len(arg))]
+# 
+# 
+# idx = []
+# idx_not = []
+# 
+# idx.append(arg[0])
+# idx_not.append(arg_not[0])
+# for i in range(1,L-1):
+#     idx.append(arg[i]+idx[i-1])
+#     idx_not.append(arg_not[i]+idx_not[i-1])
+# 
+# 
+# M = {}
+# #bond_dim=500
+# 
+# M[0]=np.zeros((2,bonddim))
+# M[0][arg[0],idx[0]]=1.
+# M[0][arg_not[0],idx_not[0]]=np.random.rand()
+# for i in range(1,L-1):
+#     M[i]=np.zeros((2,bonddim,bonddim))
+#     M[i][arg[i],idx[i-1],idx[i]]=np.random.rand()
+#     M[i][arg_not[i],idx_not[i-1],idx_not[i]]=np.random.rand()
+# M[L-1]=np.zeros((2,bonddim))
+# M[L-1][arg[L-1],idx[L-2]]=np.random.rand()
+# M[L-1][arg_not[L-1],idx_not[L-2]]=np.random.rand()
+# 
+# mps = mp.init_wavefunction(M,bonddim)
+# =============================================================================
+
+
 mps = mp.init_wavefunction(L, bonddim)
 #input()
 #bond_dim=4
 #mps = mp.create_MPS(L,bond_dim)
 
 t1 = time.time()
-energy, MPS = mp.DMRG(L, MPO, 2, mps)
+energy, MPS = mp.DMRG(L, MPO, 4, mps)
 t2 = time.time()
 
 print("Time of diag=",t2-t1)
@@ -215,6 +267,25 @@ print("Time of diag=",t2-t1)
 #test1 = tn.contract(mps_con)
 #test=MPS[0]@MPS[1]@MPS[2]
 
+
+"""
+Create S^2 operator
+"""
+S2 = mp.QuantumOperator(L)
+
+for i in range(n_dots):
+    for alpha in range(2):
+        for j in range(n_dots):
+            for beta in range(2):
+                S2.add(Sp(i,alpha)*Sm(j,beta)*0.5) #Sx^2+Sy^2
+                S2.add(Sm(i,alpha)*Sp(j,beta)*0.5) #Sx^2+Sy^2
+                S2.add(N(ix(i,alpha,1))*N(ix(j,beta,1))*(0.25)) #Sz^2
+                S2.add(N(ix(i,alpha,0))*N(ix(j,beta,0))*(0.25)) #Sz^2
+                S2.add(N(ix(i,alpha,1))*N(ix(j,beta,0))*(-0.25)) #Sz^2
+                S2.add(N(ix(i,alpha,0))*N(ix(j,beta,1))*(-0.25)) #Sz^2
+Stot2 = S2.ExpectatioValue(MPS)
+
+
 """
 Defining number operator for expectation value
 """
@@ -226,12 +297,28 @@ number_e = n.ExpectatioValue(MPS)
 #np.transpose(np.where(np.abs(test.tensor)>=1e-10))[0]
 #number_e=np.count_nonzero(np.transpose(np.where(np.abs(test.tensor)>=1e-10))[0])
 
-print('Energy = {}'.format(energy+number_e*chem_pot))
+print('Energy = {}'.format(energy+number_e*chem_pot),'S^2=',Stot2)
 print("Number of particles = {}".format(round(number_e)))
 
-f = open("GS_energy_{}dot.dat".format(n_dots),"w")
-f.write("Energy = {}, Number of electrons = {}, Bond dimension = {}".format(energy+number_e*chem_pot, number_e, bonddim))
-f.close()
+# =============================================================================
+# f = open("GS_energy_{}dot.dat".format(n_dots),"w")
+# f.write("Energy = {}, Number of electrons = {}, Bond dimension = {}".format(energy+number_e*chem_pot, number_e, bonddim))
+# f.close()
+# 
+# for i in range(L):
+#     w = open("M_{}_for_{}dots.mps".format(i,n_dots),"w")
+#     if i == 0 or i == L-1:
+#         for l in range(MPS[i].shape[0]):
+#             for m in range(MPS[i].shape[1]):
+#                 w.write("{} {} {}\n".format(l,m,MPS[i].tensor[l,m]))
+#     else:
+#         for l in range(MPS[i].shape[0]):
+#             for m in range(MPS[i].shape[1]):
+#                 for n in range(MPS[i].shape[2]):
+#                     w.write("{} {} {} {}\n".format(l,m,n,MPS[i].tensor[l,m,n]))
+#     w.close()
+#                     
+# =============================================================================
 
 #m = 200
 #M = 20
