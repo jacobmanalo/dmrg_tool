@@ -11,7 +11,7 @@ import time
 import sys
 sys.path.append('../') 
 import pymps as mp
-n_dots = 10              
+n_dots = 2         
 L = 4*n_dots
 
 
@@ -148,11 +148,14 @@ chem_pot = 20.
 for i in range(L):
    H.add(N(i)*(-chem_pot))
    
+   
+
+
+bonddim = 100
+MPO, MPO_edges = H.GetMPOTensors()
 t2=time.time()
 print("Finished building MPO=",t2-t1)
 
-bonddim = 60
-MPO, MPO_edges = H.GetMPOTensors()
 
 
 #MAKE PSI
@@ -189,8 +192,8 @@ print("Time of diag=",t2-t1)
 
 
 #mpscopy = tn.replicate_nodes(mps)
-for i in range(L):
-    mps[i].tensor = MPS[i].tensor
+#for i in range(L):
+#    mps[i].tensor = MPS[i].tensor
 
 # =============================================================================
 # mps_con = []
@@ -205,9 +208,9 @@ for i in range(L):
 #     test@=MPS[i]
 # =============================================================================
 
-test=mps[0]
-for i in range(1,L):
-    test@=mps[i]
+#test=mps[0]
+#for i in range(1,L):
+#    test@=mps[i]
 
 #test1 = tn.contract(mps_con)
 #test=MPS[0]@MPS[1]@MPS[2]
@@ -229,6 +232,19 @@ print("Number of particles = {}".format(round(number_e)))
 f = open("GS_energy_{}dot.dat".format(n_dots),"w")
 f.write("Energy = {}, Number of electrons = {}, Bond dimension = {}".format(energy+number_e*chem_pot, number_e, bonddim))
 f.close()
+
+#m = 200
+#M = 20
+#d = 2
+#L = np.random.random_sample((m,M,m))
+#R = np.random.random_sample((m,M,m))
+#W = np.random.random_sample((d,d,M,M))
+#y = np.random.random_sample((d,m,m))
+#t1 = time.time()
+#yp = tn.ncon([L, W, R, y], [(-2,'d','a'),(-1,'c','d','i'),(-3,'i','b'),('c','a','b')])
+#t2 = time.time()
+#
+#print("Contract time=",t2-t1)
 
 # =============================================================================
 # for i in range(L):

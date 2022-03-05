@@ -187,7 +187,7 @@ def lanczos2(A, r0, num_iter):
     for i in range(num_iter_max):
         id = i        
         if b[i] < abs(eps*eval_ref):
-            r = np.random.rand(shape)
+            r = np.random.rand(*shape)
             r *= 1./np.linalg.norm(r)
             Orthogonalize(r,v)
             b[i] = np.linalg.norm(r)

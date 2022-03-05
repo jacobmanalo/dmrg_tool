@@ -71,21 +71,7 @@ class SuperBlockLO1:
         self.L = L
         self.R = R
         self.W = W
-#       if L.shape[0] == 0:
-#          self.shape = (W.shape[0],R.shape[0])
-#          def matvec1(self,y):
-#            new_v =  tn.ncon([W, R, y], [(-1,'c','i'),(-3,'i','b'),('c','b')])
-#            return new_v
-#       elif R.shape[0] == 0:
-#          self.shape = (W.shape[0],L.shape[0])
-#          def matvec1(self,y):
-#            new_v =  
-#            return new_v
-#       else:
-#           self.shape = (W.shape[0],L.shape[0],R.shape[0])        
-#           def matvec(self,y):          
-#            new_v =  tn.ncon([L, W, R, y], [(-2,'d','a'),(-1,'c','d','i'),(-3,'i','b'),('c','a','b')])
-#            return new_v
+
     def matvec(self,y):
         if self.L.shape[0] == 0:
           return tn.ncon([self.W, self.R, y], [(-1,'c','i'),(-3,'i','b'),('c','b')])
@@ -213,6 +199,7 @@ class SweepOpt:
                 #hsuper = tn.ncon([self.L[i],self.ham[i].tensor,self.R[i]],[(-2,'d',-5),(-1,-4,'d','i'),(-3,'i',-6)])
                 #hsuper = SuperBlockLO(self.L[i], self.ham[i].tensor, self.R[i])
                 hsuper = SuperBlockLO1(self.L[i], self.ham[i].tensor, self.R[i])
+                
 #            num_edges_to_con = len(np.shape(self.ham[i]))-1
                 
             num_iter = min(np.prod(self.MPS[i].tensor.shape),30)
@@ -224,7 +211,7 @@ class SweepOpt:
             energies, evecs = lanczos2(hsuper,self.MPS[i].tensor,num_iter)
 #            print(energies-energies1)
 
-           
+            
            
             
             energy = min(energies)

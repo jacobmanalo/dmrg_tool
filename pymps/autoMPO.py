@@ -134,6 +134,8 @@ class QuantumOperator:
                  for n1 in range(2):
                      for i in range(nterms):
                         H[j,n,n1,i] = np.dot(states[n],np.matmul(self.Ovec[j,i],states[n1]))
+                        #print("1",H[j,n,n1,i])
+                        H[j,n,n1,i]=self.Ovec[j,i][n1,n]
                         #print("{},".format(n),"{},".format(n1),"{},".format(j),"{},".format(i),H[j,n,n1,i])
                         
          return H
@@ -157,14 +159,61 @@ class QuantumOperator:
          
              
          #simplify tensors using SVD        
-         u, vh, trun_err = tn.split_node(hMPO[0], left_edges = [hMPO[0]["n_0p"],hMPO[0]["n_0"]],right_edges=[hMPO[0]["i_0"]], max_truncation_err = truncation_error, edge_name = "g")
-         hMPO[0] = tn.Node(u.tensor, axis_names = ["n_0p","n_0","i_0"] )         
-         for j in range(1,L-1):
-            hMPO[j]= tn.Node(tn.ncon([vh.tensor,hMPO[j].tensor],[(-3,1),(-1,-2,1,-4)]),axis_names=["n_{}p".format(j),"n_{}".format(j),"i_{}".format(j-1),"i_{}".format(j)])
-            u, vh, trun_err = tn.split_node(hMPO[j], left_edges = [hMPO[j]["n_{}p".format(j)],hMPO[j]["n_{}".format(j)],hMPO[j]["i_{}".format(j-1)]], right_edges = [hMPO[j]["i_{}".format(j)]], max_truncation_err = truncation_error, edge_name  = "g")
-            hMPO[j] = tn.Node(u.tensor,axis_names=["n_{}p".format(j),"n_{}".format(j),"i_{}".format(j-1),"i_{}".format(j)])
-         hMPO[L-1]= tn.Node(tn.ncon([vh.tensor,hMPO[L-1].tensor],[(-3,1),(-1,-2,1)]),axis_names=["n_{}p".format(L-1),"n_{}".format(L-1),"i_{}".format(L-2)])
+#         u, vh, trun_err = tn.split_node(hMPO[0], left_edges = [hMPO[0]["n_0p"],hMPO[0]["n_0"]],right_edges=[hMPO[0]["i_0"]], max_truncation_err = truncation_error, edge_name = "g")
+#         hMPO[0] = tn.Node(u.tensor, axis_names = ["n_0p","n_0","i_0"] )         
+#         for j in range(1,L-1):
+#            hMPO[j]= tn.Node(tn.ncon([vh.tensor,hMPO[j].tensor],[(-3,1),(-1,-2,1,-4)]),axis_names=["n_{}p".format(j),"n_{}".format(j),"i_{}".format(j-1),"i_{}".format(j)])
+#            u, vh, trun_err = tn.split_node(hMPO[j], left_edges = [hMPO[j]["n_{}p".format(j)],hMPO[j]["n_{}".format(j)],hMPO[j]["i_{}".format(j-1)]], right_edges = [hMPO[j]["i_{}".format(j)]], max_truncation_err = truncation_error, edge_name  = "g")
+#            hMPO[j] = tn.Node(u.tensor,axis_names=["n_{}p".format(j),"n_{}".format(j),"i_{}".format(j-1),"i_{}".format(j)])
+#         hMPO[L-1]= tn.Node(tn.ncon([vh.tensor,hMPO[L-1].tensor],[(-3,1),(-1,-2,1)]),axis_names=["n_{}p".format(L-1),"n_{}".format(L-1),"i_{}".format(L-2)])
          
+         
+         for i in range(L-1):
+            if i == 0:
+                ledges = [hMPO[i]["n_{}p".format(i)],hMPO[i]["n_{}".format(i)]]
+            else:
+                ledges = [hMPO[i]["n_{}p".format(i)],hMPO[i]["n_{}".format(i)],hMPO[i]["i_{}".format(i-1)]]
+            
+            redges = [hMPO[i]["i_{}".format(i)]]
+            q,r,_ = tn.split_node(hMPO[i], left_edges=ledges, right_edges=redges, edge_name="ip_{}".format(i), max_truncation_err = truncation_error)
+               
+            hMPO[i].tensor = q.tensor
+            if i==L-2:
+                hMPO[i+1].tensor = tn.ncon([r.tensor,hMPO[i+1].tensor],[(-3,'k'),(-1,-2,'k')])
+            else:
+                hMPO[i+1].tensor = tn.ncon([r.tensor,hMPO[i+1].tensor],[(-3,'k'),(-1,-2,'k',-4)])
+         
+         for i in range(L-1,1,-1):
+            if i == L-1:
+                redges = [hMPO[i]["n_{}p".format(i)],hMPO[i]["n_{}".format(i)]]
+            else:
+                redges = [hMPO[i]["n_{}p".format(i)],hMPO[i]["n_{}".format(i)],hMPO[i]["i_{}".format(i)]]
+                
+            ledges = [hMPO[i]["i_{}".format(i-1)]]
+            q,r,_ = tn.split_node(hMPO[i], left_edges=ledges, right_edges=redges, edge_name="ip_{}".format(i-1), max_truncation_err = truncation_error)
+            
+            if i == L-1:
+                r.reorder_edges([r["n_{}p".format(i)],r["n_{}".format(i)],r["ip_{}".format(i-1)]])
+                
+            else:
+                r.reorder_edges([r["n_{}p".format(i)],r["n_{}".format(i)],r["ip_{}".format(i-1)],r["i_{}".format(i)]])
+            
+           
+            if i == 1:
+                hMPO[i-1].tensor = tn.ncon([hMPO[i-1].tensor, q.tensor],[(-1,-2,'k'),('k',-3)])
+                print(hMPO[i-1].tensor.shape)
+            else:
+                hMPO[i-1].tensor = tn.ncon([hMPO[i-1].tensor, q.tensor],[(-1,-2,-3,'k'),('k',-4)])
+            
+            
+            hMPO[i].tensor = r.tensor
+           
+            
+#         
+#         u, vh, trun_err = tn.split_node(hMPO[L-1], left_edges = [hMPO[L-1]["i_{}".format(L-2)]],right_edges=[hMPO[L-1]["n_{}p".format(L-1)],hMPO[L-1]["n_{}".format(L-1)]], max_truncation_err = truncation_error, edge_name = "g")
+#         hMPO[L-1] = tn.Node(np.transpose(vh.tensor), axis_names = ["n_{}p".format(L-1),"n_{}".format(L-1),"i_{}".format(L-2)] )
+#         hMPO[L-2]= tn.Node(tn.ncon([u.tensor,hMPO[L-2].tensor],[(1,-4),(-1,-2,-3,1)]),axis_names=["n_{}p".format(L-2),"n_{}".format(L-2),"i_{}".format(L-3),"i_{}".format(L-2)])
+#         
          connected_edges2 = []
          for j in range(1,L):
             conn2 = hMPO[j-1]["i_{}".format(j-1)]^hMPO[j]["i_{}".format(j-1)]
