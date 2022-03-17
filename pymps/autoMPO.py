@@ -270,7 +270,6 @@ def FermiOp(i, L, dagged):
     """
     A function that creates a local fermion operator in a way that
     anticommutation relations are fulfilled. 
-
     Parameters
     ----------
     i : int
@@ -284,7 +283,6 @@ def FermiOp(i, L, dagged):
     -------
     mps : LocalOperator
         Local fermion operator
-
     """
     #Define local matrices
     one = np.array([1.,0,0,1.]).reshape(2,2,1,1)
